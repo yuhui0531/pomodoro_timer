@@ -1,60 +1,107 @@
-# Pomodoro Timer
+# 番茄钟
 
-A beautiful Pomodoro timer desktop app built with Electron, React, and Vite.
+一款基于 Electron、React 和 Vite 构建的精美番茄钟桌面应用，帮助你专注工作、合理休息、追踪效率。
 
-## Features
+## 功能特性
 
-- Pomodoro, short break, and long break timer modes
-- Task list with active-task tracking
-- Per-task Pomodoro progress counts
-- Daily, seven-day, and all-time statistics
-- Customizable durations, theme, opacity, sound, and notifications
-- Mini pinned timer mode for keeping the timer on top
-- Local persistence for settings, tasks, stats, and active task
+- **三种计时模式**：番茄工作时段、短休息、长休息，可一键切换
+- **任务管理**：创建任务、标记完成、设置当前活动任务
+- **任务番茄计数**：每个任务独立记录已完成的番茄数量
+- **统计面板**：查看今日、近七日及历史累计的专注数据
+- **个性化设置**：自定义各时段时长、主题、窗口透明度、提示音和系统通知
+- **迷你置顶模式**：将计时器缩小并固定在窗口最前，专注时不被遮挡
+- **本地数据持久化**：设置、任务、统计与当前任务均保存在本地，无需登录或联网
+- **多主题支持**：内置午夜（默认）等多种主题，可在设置中切换
 
-## Tech Stack
+## 技术栈
 
-- Electron
-- React
-- Vite
-- electron-vite
-- electron-builder
+- Electron — 跨平台桌面运行时
+- React 18 — 渲染层 UI 框架
+- Vite — 前端构建工具
+- electron-vite — 主进程、预加载与渲染进程一体化构建
+- electron-builder — 桌面应用打包与分发
 
-## Getting Started
+## 快速开始
 
-Install dependencies:
+### 环境要求
+
+- Node.js 16 及以上版本
+- npm（随 Node.js 自带）
+
+### 安装依赖
 
 ```bash
 npm install
 ```
 
-Start the app in development mode:
+### 开发模式启动
 
 ```bash
 npm run dev
 ```
 
-Build the app:
+### 构建产物
 
 ```bash
 npm run build
 ```
 
-Package the desktop app:
+### 仅预览构建结果
+
+```bash
+npm run preview
+```
+
+### 打包桌面应用
 
 ```bash
 npm run dist
 ```
 
-## Project Structure
+打包后的安装文件会输出到 `dist/` 目录。macOS 平台默认生成 DMG 安装包，同时支持 arm64 和 x64 架构。
 
-```text
-src/main/        Electron main process
-src/preload/     Preload bridge exposed to the renderer
-src/renderer/    React renderer app
-build/           App icons and packaging resources
+### 仅预览渲染层（无 Electron）
+
+如果只想在浏览器中调试 UI，可以单独启动渲染层 Vite 服务（端口 5173）：
+
+```bash
+npx vite --config src/renderer/vite.config.js
 ```
 
-## Notes
+## 项目结构
 
-The app stores user data locally in browser storage keys such as `pt_settings`, `pt_tasks`, `pt_stats`, and `pt_active_task`.
+```text
+src/main/        Electron 主进程：窗口管理、IPC、置顶与透明度控制
+src/preload/     预加载脚本：通过 contextBridge 暴露安全的 electronAPI
+src/renderer/    React 渲染层：所有界面与交互逻辑
+build/           应用图标与打包资源
+```
+
+### 渲染层主要组件
+
+- `App.jsx` — 顶层状态、主题切换、本地存储与 Electron API 桥接
+- `Timer.jsx` — 番茄计时核心逻辑、模式切换、声音与通知、迷你置顶
+- `TaskList.jsx` — 任务创建、完成、激活与番茄计数
+- `Statistics.jsx` — 今日 / 七日 / 全部统计的聚合展示
+- `Settings.jsx` — 时长、主题、透明度、自动开始、声音与通知设置
+
+## 数据存储说明
+
+应用所有数据均保存在浏览器本地存储中，不会上传任何远程服务器。涉及的存储键包括：
+
+- `pt_settings` — 用户偏好设置（时长、主题、透明度、声音、通知等）
+- `pt_tasks` — 任务列表与每个任务的番茄计数
+- `pt_stats` — 历史统计记录
+- `pt_active_task` — 当前选中的活动任务
+
+如需重置数据，可在浏览器开发者工具或操作系统的应用数据目录中清除上述键值。
+
+## 常见问题
+
+- **音效或系统通知不生效？** 请在设置中开启相应开关，并确认操作系统已授予应用通知权限。
+- **迷你模式无法置顶？** 该功能依赖 Electron 主进程，仅在通过 `npm run dev` 或打包后的应用中可用，浏览器预览模式下不生效。
+- **macOS 打开提示"无法验证开发者"？** 在"系统设置 → 隐私与安全性"中允许该应用运行，或对开发者签名后再分发。
+
+## 许可与贡献
+
+欢迎提交 Issue 与 Pull Request。如对功能或界面有改进建议，请先在 Issue 中讨论再开始实现，便于沟通设计方向。
