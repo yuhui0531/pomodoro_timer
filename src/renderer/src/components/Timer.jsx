@@ -259,7 +259,7 @@ export default function Timer({ settings, tasks, activeTaskId, onComplete, pinne
             title="退出置顶"
           >
             <svg viewBox="0 0 24 24" fill="currentColor" stroke="none" width="11" height="11">
-              <path d="M12 2l3 7h5l-4 5 2 7-6-4-6 4 2-7-4-5h5z" />
+              <path d="M16 9V4h1c.55 0 1-.45 1-1V2H6v1c0 .55.45 1 1 1h1v5c0 1.66-1.34 3-3 3v2h5.97v7l1 1 1-1v-7H19v-2c-1.66 0-3-1.34-3-3z" />
             </svg>
           </button>
         </div>
@@ -497,8 +497,8 @@ export default function Timer({ settings, tasks, activeTaskId, onComplete, pinne
           onClick={togglePin}
           title="迷你置顶"
         >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="15" height="15">
-            <path d="M12 2l3 7h5l-4 5 2 7-6-4-6 4 2-7-4-5h5z" />
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="15" height="15">
+            <path d="M16 9V4h1c.55 0 1-.45 1-1V2H6v1c0 .55.45 1 1 1h1v5c0 1.66-1.34 3-3 3v2h5.97v7l1 1 1-1v-7H19v-2c-1.66 0-3-1.34-3-3z" />
           </svg>
         </button>
         <div className="timer-circle-wrap">
