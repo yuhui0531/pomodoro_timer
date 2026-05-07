@@ -1,0 +1,439 @@
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --bg: #0f172a;
+  --surface: #1e293b;
+  --surface-2: #334155;
+  --border: #475569;
+  --text: #f8fafc;
+  --text-muted: #94a3b8;
+  --text-dim: #64748b;
+
+  --focus: #f97316;
+  --focus-dim: rgba(249, 115, 22, 0.15);
+  --short: #22c55e;
+  --short-dim: rgba(34, 197, 94, 0.15);
+  --long: #3b82f6;
+  --long-dim: rgba(59, 130, 246, 0.15);
+
+  --accent: var(--focus);
+  --accent-dim: var(--focus-dim);
+
+  --radius-sm: 6px;
+  --radius: 12px;
+  --radius-lg: 20px;
+  --radius-full: 9999px;
+
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+}
+
+body {
+  height: 100vh;
+  overflow: hidden;
+  background: var(--bg);
+}
+
+#root {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Layout */
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.app-content {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 20px;
+  padding-bottom: 80px;
+}
+
+.app-content::-webkit-scrollbar {
+  width: 8px;
+}
+.app-content::-webkit-scrollbar-track {
+  background: rgba(255,255,255,0.04);
+  border-radius: var(--radius-full);
+}
+.app-content::-webkit-scrollbar-thumb {
+  background: var(--surface-2);
+  border-radius: var(--radius-full);
+}
+.app-content::-webkit-scrollbar-thumb:hover {
+  background: var(--border);
+}
+
+/* Bottom Tab Bar */
+.tab-bar {
+  display: flex;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  padding: 8px 0;
+  flex-shrink: 0;
+}
+
+.tab-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 6px 4px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-dim);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  transition: color 0.15s;
+}
+
+.tab-btn svg {
+  width: 22px;
+  height: 22px;
+  transition: transform 0.15s;
+}
+
+.tab-btn:hover {
+  color: var(--text-muted);
+}
+
+.tab-btn.active {
+  color: var(--accent);
+}
+
+.tab-btn.active svg {
+  transform: scale(1.05);
+}
+
+/* Buttons */
+button {
+  cursor: pointer;
+  border: none;
+  background: none;
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 20px;
+  border-radius: var(--radius-full);
+  font-weight: 600;
+  font-size: 14px;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.btn-primary {
+  background: var(--accent);
+  color: white;
+}
+
+.btn-primary:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+.btn-ghost {
+  background: var(--surface-2);
+  color: var(--text-muted);
+}
+
+.btn-ghost:hover {
+  background: var(--border);
+  color: var(--text);
+}
+
+.btn-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-full);
+  background: var(--surface-2);
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+
+.btn-icon:hover {
+  background: var(--border);
+  color: var(--text);
+}
+
+/* Inputs */
+input[type="text"],
+input[type="number"] {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 14px;
+  padding: 10px 14px;
+  outline: none;
+  width: 100%;
+  transition: border-color 0.15s;
+  user-select: text;
+}
+
+input[type="text"]:focus,
+input[type="number"]:focus {
+  border-color: var(--accent);
+}
+
+input[type="range"] {
+  -webkit-appearance: none;
+  width: 100%;
+  height: 4px;
+  background: var(--surface-2);
+  border-radius: var(--radius-full);
+  outline: none;
+  cursor: pointer;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+  transition: transform 0.15s;
+}
+
+input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+}
+
+/* Toggle switch */
+.toggle {
+  position: relative;
+  display: inline-block;
+  width: 42px;
+  height: 24px;
+  flex-shrink: 0;
+}
+
+.toggle input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggle-slider {
+  position: absolute;
+  inset: 0;
+  background: var(--surface-2);
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.toggle-slider::before {
+  content: '';
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  left: 3px;
+  top: 3px;
+  background: white;
+  border-radius: 50%;
+  transition: transform 0.2s;
+}
+
+.toggle input:checked + .toggle-slider {
+  background: var(--accent);
+}
+
+.toggle input:checked + .toggle-slider::before {
+  transform: translateX(18px);
+}
+
+/* Section */
+.section-title {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  margin-bottom: 12px;
+}
+
+/* Card */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  margin-bottom: 12px;
+}
+
+/* macOS traffic lights space */
+.drag-region {
+  -webkit-app-region: drag;
+  height: 28px;
+  flex-shrink: 0;
+}
+
+/* Mode colors */
+[data-mode="focus"] {
+  --accent: var(--focus);
+  --accent-dim: var(--focus-dim);
+}
+[data-mode="short"] {
+  --accent: var(--short);
+  --accent-dim: var(--short-dim);
+}
+[data-mode="long"] {
+  --accent: var(--long);
+  --accent-dim: var(--long-dim);
+}
+
+/* ── Themes ────────────────────────────────────────────────── */
+
+/* charcoal — 炭灰 */
+[data-theme="charcoal"] {
+  --bg: #18181b;
+  --surface: #27272a;
+  --surface-2: #3f3f46;
+  --border: #52525b;
+  --text: #fafafa;
+  --text-muted: #a1a1aa;
+  --text-dim: #71717a;
+  --focus: #f43f5e;
+  --focus-dim: rgba(244, 63, 94, 0.15);
+  --short: #10b981;
+  --short-dim: rgba(16, 185, 129, 0.15);
+  --long: #818cf8;
+  --long-dim: rgba(129, 140, 248, 0.15);
+}
+
+/* coffee — 咖啡 */
+[data-theme="coffee"] {
+  --bg: #1c1410;
+  --surface: #2c1f16;
+  --surface-2: #3d2c20;
+  --border: #5c4033;
+  --text: #fdf8f0;
+  --text-muted: #c4a882;
+  --text-dim: #8b7355;
+  --focus: #f59e0b;
+  --focus-dim: rgba(245, 158, 11, 0.15);
+  --short: #84cc16;
+  --short-dim: rgba(132, 204, 22, 0.15);
+  --long: #06b6d4;
+  --long-dim: rgba(6, 182, 212, 0.15);
+}
+
+/* forest — 森林 */
+[data-theme="forest"] {
+  --bg: #0d1f17;
+  --surface: #162a1e;
+  --surface-2: #1e3828;
+  --border: #2d5240;
+  --text: #f0fdf4;
+  --text-muted: #86efac;
+  --text-dim: #4ade80;
+  --focus: #fb923c;
+  --focus-dim: rgba(251, 146, 60, 0.15);
+  --short: #34d399;
+  --short-dim: rgba(52, 211, 153, 0.15);
+  --long: #38bdf8;
+  --long-dim: rgba(56, 189, 248, 0.15);
+}
+
+/* lavender — 薰衣草 */
+[data-theme="lavender"] {
+  --bg: #0f0a1e;
+  --surface: #1a1035;
+  --surface-2: #261a4a;
+  --border: #3b2d6b;
+  --text: #f5f3ff;
+  --text-muted: #c4b5fd;
+  --text-dim: #8b5cf6;
+  --focus: #f472b6;
+  --focus-dim: rgba(244, 114, 182, 0.15);
+  --short: #34d399;
+  --short-dim: rgba(52, 211, 153, 0.15);
+  --long: #60a5fa;
+  --long-dim: rgba(96, 165, 250, 0.15);
+}
+
+/* light — 浅色 */
+[data-theme="light"] {
+  --bg: #f8fafc;
+  --surface: #ffffff;
+  --surface-2: #f1f5f9;
+  --border: #e2e8f0;
+  --text: #0f172a;
+  --text-muted: #475569;
+  --text-dim: #94a3b8;
+  --focus: #ea580c;
+  --focus-dim: rgba(234, 88, 12, 0.12);
+  --short: #16a34a;
+  --short-dim: rgba(22, 163, 74, 0.12);
+  --long: #2563eb;
+  --long-dim: rgba(37, 99, 235, 0.12);
+}
+
+/* warm-light — 暖砂 */
+[data-theme="warm-light"] {
+  --bg: #f7f2ec;
+  --surface: #eae3db;
+  --surface-2: #f1e8e0;
+  --border: #e5e0da;
+  --text: #6f655e;
+  --text-muted: #93877f;
+  --text-dim: #b7aea6;
+  --focus: #c65a4a;
+  --focus-dim: #f8dccf;
+  --short: #7d9a72;
+  --short-dim: rgba(125, 154, 114, 0.15);
+  --long: #8c96b0;
+  --long-dim: rgba(140, 150, 176, 0.15);
+}
+
+/* tomato — 番茄 */
+[data-theme="tomato"] {
+  --bg: #fff5f0;
+  --surface: #ffffff;
+  --surface-2: #fef0eb;
+  --border: #fcd5c5;
+  --text: #2d1108;
+  --text-muted: #7b4235;
+  --text-dim: #b87060;
+  --focus: #c1121f;
+  --focus-dim: rgba(193, 18, 31, 0.1);
+  --short: #2d9e6b;
+  --short-dim: rgba(45, 158, 107, 0.1);
+  --long: #3a7bbf;
+  --long-dim: rgba(58, 123, 191, 0.1);
+}

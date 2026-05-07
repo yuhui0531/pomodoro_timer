@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "renderer-preview",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["vite", "--config", "src/renderer/vite.config.js"],
+      "port": 5173
+    }
+  ]
+}
