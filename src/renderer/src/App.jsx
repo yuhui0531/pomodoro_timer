@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useLocalStorage } from './hooks/useLocalStorage'
-import Timer from './components/Timer'
+import Timer, { MODES } from './components/Timer'
 import TaskList from './components/TaskList'
 import Statistics from './components/Statistics'
 import Settings from './components/Settings'
@@ -72,6 +72,15 @@ export default function App() {
   const [stats, setStats] = useLocalStorage('pt_stats', {})
   const [activeTaskId, setActiveTaskId] = useLocalStorage('pt_active_task', null)
 
+  // Per-mode timer state lifted here so it survives tab switches
+  const [timerState, setTimerState] = useState({
+    focus: { timeLeft: null, isRunning: false, customTotal: null, hasStarted: false },
+    short: { timeLeft: null, isRunning: false, customTotal: null, hasStarted: false },
+    long: { timeLeft: null, isRunning: false, customTotal: null, hasStarted: false },
+    currentMode: MODES.FOCUS,
+    pomodoroCount: 0,
+  })
+
   // Merge any new default keys into saved settings (handles upgrades)
   const mergedSettings = { ...DEFAULT_SETTINGS, ...settings }
 
@@ -127,6 +136,8 @@ export default function App() {
           onComplete={handleTimerComplete}
           pinned={pinned}
           onPinChange={setPinned}
+          timerState={timerState}
+          onTimerStateChange={setTimerState}
         />
       ) : (
         <>
@@ -141,6 +152,8 @@ export default function App() {
                 onComplete={handleTimerComplete}
                 pinned={pinned}
                 onPinChange={setPinned}
+                timerState={timerState}
+                onTimerStateChange={setTimerState}
               />
             )}
             {tab === 'tasks' && (

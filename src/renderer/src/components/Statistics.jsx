@@ -322,7 +322,7 @@ export default function Statistics({ stats }) {
         .calendar-count {
           font-size: 11px;
           font-weight: 700;
-          color: var(--focus);
+          color: white;
         }
 
         .calendar-label {

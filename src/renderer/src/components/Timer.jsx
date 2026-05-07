@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { playSound } from '../utils/sound'
 
-const MODES = { FOCUS: 'focus', SHORT: 'short', LONG: 'long' }
+export const MODES = { FOCUS: 'focus', SHORT: 'short', LONG: 'long' }
 
 const MODE_LABELS = {
   [MODES.FOCUS]: '专注',
@@ -26,14 +26,13 @@ function showNotification(title, body) {
   }
 }
 
-export default function Timer({ settings, tasks, activeTaskId, onComplete, pinned, onPinChange }) {
-  const [mode, setMode] = useState(MODES.FOCUS)
-  const [pomodoroCount, setPomodoroCount] = useState(0)
-  const [isRunning, setIsRunning] = useState(false)
-  // customTotal overrides settings duration for the current session
-  const [customTotal, setCustomTotal] = useState(null)
+export default function Timer({ settings, tasks, activeTaskId, onComplete, pinned, onPinChange, timerState, onTimerStateChange }) {
   const [editingDuration, setEditingDuration] = useState(false)
   const [editInput, setEditInput] = useState('')
+
+  const mode = timerState.currentMode
+  const pomodoroCount = timerState.pomodoroCount
+  const { timeLeft, isRunning, customTotal, hasStarted } = timerState[mode]
 
   const settingsTotal = {
     [MODES.FOCUS]: settings.focusDuration * 60,
@@ -42,27 +41,25 @@ export default function Timer({ settings, tasks, activeTaskId, onComplete, pinne
   }[mode]
 
   const effectiveTotal = customTotal ?? settingsTotal
-  const [timeLeft, setTimeLeft] = useState(settingsTotal)
+  const displayTimeLeft = timeLeft !== null ? timeLeft : settingsTotal
 
   const timerRef = useRef({ startedAt: null, startedWith: null })
   const intervalRef = useRef(null)
-  const prevModeRef = useRef(mode)
 
-  // Reset when mode changes
-  useEffect(() => {
-    if (prevModeRef.current !== mode) {
-      prevModeRef.current = mode
-      setIsRunning(false)
-      setCustomTotal(null)
-      setTimeLeft(settingsTotal)
-    }
-  }, [mode, settingsTotal])
+  const updateMode = useCallback((targetMode, updates) => {
+    onTimerStateChange(prev => {
+      const current = prev[targetMode]
+      // Bail out when nothing actually changed (interval ticks ~5x/sec but seconds change ~1x/sec)
+      if (Object.keys(updates).every(k => current[k] === updates[k])) return prev
+      return { ...prev, [targetMode]: { ...current, ...updates } }
+    })
+  }, [onTimerStateChange])
 
   useEffect(() => {
     document.title = isRunning
-      ? `${formatTime(timeLeft)} — ${MODE_LABELS[mode]}`
+      ? `${formatTime(displayTimeLeft)} — ${MODE_LABELS[mode]}`
       : '番茄钟'
-  }, [timeLeft, isRunning, mode])
+  }, [displayTimeLeft, isRunning, mode])
 
   const handleComplete = useCallback((completedMode, count) => {
     if (settings.soundEnabled) playSound(completedMode === MODES.FOCUS ? 'focus' : 'break')
@@ -79,91 +76,71 @@ export default function Timer({ settings, tasks, activeTaskId, onComplete, pinne
     if (completedMode === MODES.FOCUS) {
       const newCount = count + 1
       const nextMode = newCount % settings.longBreakInterval === 0 ? MODES.LONG : MODES.SHORT
-      setMode(nextMode)
-      setCustomTotal(null)
-      const nextSecs = nextMode === MODES.LONG
-        ? settings.longBreakDuration * 60
-        : settings.shortBreakDuration * 60
-      setTimeLeft(nextSecs)
-      if (settings.autoStartBreaks) {
-        setTimeout(() => {
-          timerRef.current = { startedAt: Date.now(), startedWith: nextSecs }
-          setIsRunning(true)
-        }, 50)
-      } else {
-        setIsRunning(false)
-      }
+      const auto = settings.autoStartBreaks
+      onTimerStateChange(prev => ({
+        ...prev,
+        currentMode: nextMode,
+        pomodoroCount: newCount,
+        [completedMode]: { timeLeft: null, isRunning: false, customTotal: null, hasStarted: false },
+        [nextMode]: { timeLeft: null, isRunning: auto, customTotal: null, hasStarted: auto },
+      }))
     } else {
-      setMode(MODES.FOCUS)
-      setCustomTotal(null)
-      const nextSecs = settings.focusDuration * 60
-      setTimeLeft(nextSecs)
-      if (settings.autoStartFocus) {
-        setTimeout(() => {
-          timerRef.current = { startedAt: Date.now(), startedWith: nextSecs }
-          setIsRunning(true)
-        }, 50)
-      } else {
-        setIsRunning(false)
-      }
+      const auto = settings.autoStartFocus
+      onTimerStateChange(prev => ({
+        ...prev,
+        currentMode: MODES.FOCUS,
+        [completedMode]: { timeLeft: null, isRunning: false, customTotal: null, hasStarted: false },
+        [MODES.FOCUS]: { timeLeft: null, isRunning: auto, customTotal: null, hasStarted: auto },
+      }))
     }
-  }, [settings, onComplete])
+  }, [settings, onComplete, onTimerStateChange])
 
   useEffect(() => {
-    if (!isRunning) {
-      clearInterval(intervalRef.current)
-      return
-    }
+    if (!isRunning) return
 
-    const currentMode = mode
-    const currentCount = pomodoroCount
+    const startTime = timeLeft ?? effectiveTotal
+    timerRef.current = { startedAt: Date.now(), startedWith: startTime }
 
     intervalRef.current = setInterval(() => {
       const { startedAt, startedWith } = timerRef.current
-      if (!startedAt) return
       const elapsed = Math.floor((Date.now() - startedAt) / 1000)
       const remaining = Math.max(0, startedWith - elapsed)
-      setTimeLeft(remaining)
 
       if (remaining === 0) {
         clearInterval(intervalRef.current)
-        setIsRunning(false)
-        if (currentMode === MODES.FOCUS) setPomodoroCount(c => c + 1)
-        handleComplete(currentMode, currentMode === MODES.FOCUS ? currentCount : pomodoroCount)
+        handleComplete(mode, pomodoroCount)
+      } else {
+        updateMode(mode, { timeLeft: remaining })
       }
     }, 200)
 
     return () => clearInterval(intervalRef.current)
-  }, [isRunning]) // eslint-disable-line
+  }, [isRunning, mode]) // eslint-disable-line
 
   function start() {
-    timerRef.current = { startedAt: Date.now(), startedWith: timeLeft }
-    setIsRunning(true)
+    onTimerStateChange(prev => {
+      const cleared = { timeLeft: null, isRunning: false, customTotal: null, hasStarted: false }
+      const next = { ...prev }
+      for (const m of Object.values(MODES)) {
+        next[m] = m === mode
+          ? { ...prev[m], isRunning: true, hasStarted: true }
+          : cleared
+      }
+      return next
+    })
   }
 
   function pause() {
-    clearInterval(intervalRef.current)
-    setIsRunning(false)
+    updateMode(mode, { isRunning: false })
   }
 
   function reset() {
-    clearInterval(intervalRef.current)
-    setIsRunning(false)
-    setTimeLeft(effectiveTotal)
+    updateMode(mode, { timeLeft: effectiveTotal, isRunning: false, hasStarted: false })
   }
 
   function switchMode(newMode) {
     if (newMode === mode) return
-    clearInterval(intervalRef.current)
-    setIsRunning(false)
-    setMode(newMode)
-    prevModeRef.current = newMode
-    setCustomTotal(null)
-    setTimeLeft({
-      [MODES.FOCUS]: settings.focusDuration * 60,
-      [MODES.SHORT]: settings.shortBreakDuration * 60,
-      [MODES.LONG]: settings.longBreakDuration * 60,
-    }[newMode])
+    onTimerStateChange(prev => ({ ...prev, currentMode: newMode }))
   }
 
   function togglePin() {
@@ -172,10 +149,9 @@ export default function Timer({ settings, tasks, activeTaskId, onComplete, pinne
     window.electronAPI?.setAlwaysOnTop(next)
   }
 
-  // Custom duration editing
   function startEdit() {
     if (isRunning) return
-    setEditInput(String(Math.ceil(timeLeft / 60)))
+    setEditInput(String(Math.ceil(displayTimeLeft / 60)))
     setEditingDuration(true)
   }
 
@@ -183,8 +159,7 @@ export default function Timer({ settings, tasks, activeTaskId, onComplete, pinne
     const mins = parseInt(editInput)
     if (mins >= 1 && mins <= 180) {
       const secs = mins * 60
-      setCustomTotal(secs)
-      setTimeLeft(secs)
+      updateMode(mode, { customTotal: secs, timeLeft: secs })
     }
     setEditingDuration(false)
   }
@@ -286,7 +261,7 @@ export default function Timer({ settings, tasks, activeTaskId, onComplete, pinne
               <span className="mini-edit-unit">分</span>
             </span>
           ) : (
-            formatTime(timeLeft)
+            formatTime(displayTimeLeft)
           )}
         </div>
 
@@ -301,7 +276,7 @@ export default function Timer({ settings, tasks, activeTaskId, onComplete, pinne
               ? <svg viewBox="0 0 24 24" fill="currentColor" width="12" height="12"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
               : <svg viewBox="0 0 24 24" fill="currentColor" width="12" height="12"><polygon points="5,3 19,12 5,21"/></svg>
             }
-            {isRunning ? '暂停' : (timeLeft === effectiveTotal ? '开始' : '继续')}
+            {isRunning ? '暂停' : (hasStarted ? '继续' : '开始')}
           </button>
           <button
             className="mini-reset"
@@ -471,7 +446,7 @@ export default function Timer({ settings, tasks, activeTaskId, onComplete, pinne
   }
 
   // ── Full view ────────────────────────────────────────────────
-  const progress = timeLeft / effectiveTotal
+  const progress = displayTimeLeft / effectiveTotal
   const R = 110
   const circumference = 2 * Math.PI * R
   const dashOffset = circumference * (1 - progress)
@@ -538,7 +513,7 @@ export default function Timer({ settings, tasks, activeTaskId, onComplete, pinne
                   <span className="full-edit-unit">分钟</span>
                 </span>
               ) : (
-                formatTime(timeLeft)
+                formatTime(displayTimeLeft)
               )}
             </div>
             <div className="timer-label">{MODE_LABELS[mode]}</div>
@@ -561,7 +536,7 @@ export default function Timer({ settings, tasks, activeTaskId, onComplete, pinne
           <button className="btn btn-primary timer-main-btn" onClick={pause}>暂停</button>
         ) : (
           <button className="btn btn-primary timer-main-btn" onClick={start}>
-            {timeLeft === effectiveTotal ? '开始' : '继续'}
+            {hasStarted ? '继续' : '开始'}
           </button>
         )}
         <div style={{ width: 36 }} />
