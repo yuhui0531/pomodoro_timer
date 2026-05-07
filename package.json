@@ -1,5 +1,5 @@
 {
-  "name": "potato-timer",
+  "name": "pomodoro-timer",
   "version": "1.0.0",
   "description": "A beautiful Pomodoro timer desktop app",
   "main": "out/main/index.js",
@@ -10,7 +10,7 @@
     "dist": "electron-vite build && electron-builder"
   },
   "build": {
-    "appId": "com.potato-timer.app",
+    "appId": "com.pomodoro-timer.app",
     "productName": "番茄钟",
     "directories": {
       "buildResources": "build",

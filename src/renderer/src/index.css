@@ -14,6 +14,7 @@
   --text-dim: #64748b;
 
   --focus: #f97316;
+  --focus-rgb: 249, 115, 22;
   --focus-dim: rgba(249, 115, 22, 0.15);
   --short: #22c55e;
   --short-dim: rgba(34, 197, 94, 0.15);

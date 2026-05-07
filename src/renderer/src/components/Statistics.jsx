@@ -1,12 +1,25 @@
+import React from 'react'
+
 function todayKey() {
   return new Date().toISOString().split('T')[0]
 }
 
-function getLast7Days() {
+function getMonthDays(date = new Date()) {
+  const year = date.getFullYear()
+  const month = date.getMonth()
+  const firstDay = new Date(year, month, 1)
+  const lastDay = new Date(year, month + 1, 0)
+  const daysInMonth = lastDay.getDate()
+  const startingDayOfWeek = firstDay.getDay()
+
   const days = []
-  for (let i = 6; i >= 0; i--) {
-    const d = new Date()
-    d.setDate(d.getDate() - i)
+  // 前面的空白日期
+  for (let i = 0; i < startingDayOfWeek; i++) {
+    days.push(null)
+  }
+  // 当月日期
+  for (let i = 1; i <= daysInMonth; i++) {
+    const d = new Date(year, month, i)
     days.push(d.toISOString().split('T')[0])
   }
   return days
@@ -17,14 +30,32 @@ function dayLabel(dateStr) {
   return ['日', '一', '二', '三', '四', '五', '六'][d.getDay()]
 }
 
+function monthLabel(dateStr) {
+  const d = new Date(dateStr + 'T00:00:00')
+  return `${d.getFullYear()}年${d.getMonth() + 1}月`
+}
+
 export default function Statistics({ stats }) {
   const today = todayKey()
   const todayData = stats[today] || { completed: 0, focusedMinutes: 0 }
-  const last7 = getLast7Days()
+  const [currentMonth, setCurrentMonth] = React.useState(new Date())
 
-  const maxCompleted = Math.max(1, ...last7.map(d => (stats[d] || {}).completed || 0))
+  const monthDays = getMonthDays(currentMonth)
+  const maxCompleted = Math.max(1, ...Object.values(stats).map(d => d.completed || 0))
   const totalCompleted = Object.values(stats).reduce((s, d) => s + (d.completed || 0), 0)
   const totalMinutes = Object.values(stats).reduce((s, d) => s + (d.focusedMinutes || 0), 0)
+
+  function prevMonth() {
+    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1))
+  }
+
+  function nextMonth() {
+    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1))
+  }
+
+  function goToday() {
+    setCurrentMonth(new Date())
+  }
 
   return (
     <div className="stats-page">
@@ -41,28 +72,42 @@ export default function Statistics({ stats }) {
         </div>
       </div>
 
-      {/* Weekly chart */}
-      <div className="section-title" style={{ marginTop: 20 }}>近7天</div>
+      {/* Monthly calendar */}
+      <div className="section-title" style={{ marginTop: 20 }}>日历</div>
       <div className="card">
-        <div className="bar-chart">
-          {last7.map(date => {
+        <div className="calendar-header">
+          <button className="calendar-nav-btn" onClick={prevMonth}>‹</button>
+          <div className="calendar-month-label">{monthLabel(currentMonth.toISOString().split('T')[0])}</div>
+          <button className="calendar-nav-btn" onClick={nextMonth}>›</button>
+          <button className="calendar-today-btn" onClick={goToday}>今天</button>
+        </div>
+
+        <div className="calendar-weekdays">
+          {['日', '一', '二', '三', '四', '五', '六'].map(day => (
+            <div key={day} className="calendar-weekday">{day}</div>
+          ))}
+        </div>
+
+        <div className="calendar-grid">
+          {monthDays.map((date, idx) => {
+            if (!date) {
+              return <div key={`empty-${idx}`} className="calendar-day-empty" />
+            }
             const count = (stats[date] || {}).completed || 0
-            const heightPct = maxCompleted > 0 ? (count / maxCompleted) * 100 : 0
             const isToday = date === today
+            const intensity = maxCompleted > 0 ? count / maxCompleted : 0
+            const dayNum = new Date(date + 'T00:00:00').getDate()
+
             return (
-              <div key={date} className="bar-col">
-                <div className="bar-count">{count > 0 ? count : ''}</div>
-                <div className="bar-track">
-                  <div
-                    className="bar-fill"
-                    style={{
-                      height: `${heightPct}%`,
-                      background: isToday ? 'var(--focus)' : 'var(--surface-2)',
-                      border: isToday ? '1px solid var(--focus)' : '1px solid var(--border)',
-                    }}
-                  />
+              <div key={date} className="calendar-day">
+                <div className={`calendar-cell ${isToday ? 'today' : ''}`} style={{
+                  background: count === 0
+                    ? 'var(--surface)'
+                    : `rgba(var(--focus-rgb), ${0.2 + intensity * 0.8})`,
+                }}>
+                  <div className="calendar-date">{dayNum}</div>
+                  {count > 0 && <div className="calendar-count">{count}</div>}
                 </div>
-                <div className={`bar-label ${isToday ? 'today' : ''}`}>{dayLabel(date)}</div>
               </div>
             )
           })}
@@ -162,6 +207,129 @@ export default function Statistics({ stats }) {
         .bar-label.today {
           color: var(--focus);
           font-weight: 700;
+        }
+
+        .calendar-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          margin-bottom: 16px;
+          gap: 8px;
+        }
+
+        .calendar-nav-btn {
+          width: 32px;
+          height: 32px;
+          border-radius: 6px;
+          background: var(--surface-2);
+          color: var(--text);
+          border: none;
+          cursor: pointer;
+          font-size: 18px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: all 0.2s;
+        }
+
+        .calendar-nav-btn:hover {
+          background: var(--border);
+        }
+
+        .calendar-month-label {
+          flex: 1;
+          text-align: center;
+          font-size: 16px;
+          font-weight: 600;
+          color: var(--text);
+        }
+
+        .calendar-today-btn {
+          padding: 6px 12px;
+          border-radius: 6px;
+          background: var(--focus);
+          color: white;
+          border: none;
+          cursor: pointer;
+          font-size: 12px;
+          font-weight: 600;
+          transition: all 0.2s;
+        }
+
+        .calendar-today-btn:hover {
+          filter: brightness(1.1);
+        }
+
+        .calendar-weekdays {
+          display: grid;
+          grid-template-columns: repeat(7, 1fr);
+          gap: 4px;
+          margin-bottom: 8px;
+        }
+
+        .calendar-weekday {
+          text-align: center;
+          font-size: 12px;
+          font-weight: 600;
+          color: var(--text-dim);
+          padding: 8px 0;
+        }
+
+        .calendar-grid {
+          display: grid;
+          grid-template-columns: repeat(7, 1fr);
+          gap: 4px;
+        }
+
+        .calendar-day {
+          aspect-ratio: 1;
+        }
+
+        .calendar-day-empty {
+          aspect-ratio: 1;
+        }
+
+        .calendar-cell {
+          width: 100%;
+          height: 100%;
+          border-radius: 6px;
+          border: 1px solid var(--border);
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          gap: 2px;
+          transition: all 0.3s ease;
+          cursor: default;
+          padding: 4px;
+        }
+
+        .calendar-cell.today {
+          border: 2px solid var(--focus);
+          box-shadow: 0 0 0 1px var(--focus);
+        }
+
+        .calendar-cell:hover {
+          border-color: var(--focus);
+        }
+
+        .calendar-date {
+          font-size: 13px;
+          font-weight: 600;
+          color: var(--text);
+        }
+
+        .calendar-count {
+          font-size: 11px;
+          font-weight: 700;
+          color: var(--focus);
+        }
+
+        .calendar-label {
+          font-size: 11px;
+          color: var(--text-dim);
+          font-weight: 500;
+          text-align: center;
         }
       `}</style>
     </div>
