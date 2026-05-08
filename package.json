@@ -1,6 +1,6 @@
 {
   "name": "pomodoro-timer",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A beautiful Pomodoro timer desktop app",
   "main": "out/main/index.js",
   "scripts": {
