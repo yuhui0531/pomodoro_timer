@@ -26,9 +26,26 @@
       "category": "public.app-category.productivity",
       "icon": "build/icon.icns"
     },
+    "win": {
+      "target": [
+        { "target": "nsis", "arch": ["x64"] }
+      ],
+      "artifactName": "pomodoro-timer-${version}-${arch}-setup.${ext}"
+    },
+    "linux": {
+      "target": [
+        { "target": "AppImage", "arch": ["x64"] }
+      ],
+      "category": "Utility",
+      "artifactName": "pomodoro-timer-${version}-${arch}.${ext}"
+    },
     "dmg": {
       "title": "番茄钟",
       "artifactName": "pomodoro-timer-${version}-${arch}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
     }
   },
   "devDependencies": {
