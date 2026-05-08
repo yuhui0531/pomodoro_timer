@@ -3,13 +3,13 @@ import { playSound } from '../utils/sound'
 
 export const MODES = { FOCUS: 'focus', SHORT: 'short', LONG: 'long' }
 
-const MODE_LABELS = {
+export const MODE_LABELS = {
   [MODES.FOCUS]: '专注',
   [MODES.SHORT]: '短休',
   [MODES.LONG]: '长休',
 }
 
-function formatTime(seconds) {
+export function formatTime(seconds) {
   const m = Math.floor(seconds / 60).toString().padStart(2, '0')
   const s = (seconds % 60).toString().padStart(2, '0')
   return `${m}:${s}`
@@ -26,7 +26,20 @@ function showNotification(title, body) {
   }
 }
 
-export default function Timer({ settings, tasks, activeTaskId, onComplete, pinned, onPinChange, timerState, onTimerStateChange }) {
+export default function Timer({
+  settings,
+  tasks,
+  activeTaskId,
+  onComplete,
+  pinned,
+  onPinChange,
+  timerState,
+  onTimerStateChange,
+  onStart,
+  onPause,
+  onReset,
+  onSwitchMode,
+}) {
   const [editingDuration, setEditingDuration] = useState(false)
   const [editInput, setEditInput] = useState('')
 
@@ -118,29 +131,19 @@ export default function Timer({ settings, tasks, activeTaskId, onComplete, pinne
   }, [isRunning, mode]) // eslint-disable-line
 
   function start() {
-    onTimerStateChange(prev => {
-      const cleared = { timeLeft: null, isRunning: false, customTotal: null, hasStarted: false }
-      const next = { ...prev }
-      for (const m of Object.values(MODES)) {
-        next[m] = m === mode
-          ? { ...prev[m], isRunning: true, hasStarted: true }
-          : cleared
-      }
-      return next
-    })
+    onStart()
   }
 
   function pause() {
-    updateMode(mode, { isRunning: false })
+    onPause()
   }
 
   function reset() {
-    updateMode(mode, { timeLeft: effectiveTotal, isRunning: false, hasStarted: false })
+    onReset()
   }
 
   function switchMode(newMode) {
-    if (newMode === mode) return
-    onTimerStateChange(prev => ({ ...prev, currentMode: newMode }))
+    onSwitchMode(newMode)
   }
 
   function togglePin() {

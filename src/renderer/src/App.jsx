@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useLocalStorage } from './hooks/useLocalStorage'
-import Timer, { MODES } from './components/Timer'
+import Timer, { MODES, MODE_LABELS, formatTime } from './components/Timer'
 import TaskList from './components/TaskList'
 import Statistics from './components/Statistics'
 import Settings from './components/Settings'
@@ -20,6 +20,14 @@ const DEFAULT_SETTINGS = {
 
 function todayKey() {
   return new Date().toISOString().split('T')[0]
+}
+
+function getModeSettingsTotal(settings, mode) {
+  return {
+    [MODES.FOCUS]: settings.focusDuration * 60,
+    [MODES.SHORT]: settings.shortBreakDuration * 60,
+    [MODES.LONG]: settings.longBreakDuration * 60,
+  }[mode]
 }
 
 const NAV_ITEMS = [
@@ -72,7 +80,6 @@ export default function App() {
   const [stats, setStats] = useLocalStorage('pt_stats', {})
   const [activeTaskId, setActiveTaskId] = useLocalStorage('pt_active_task', null)
 
-  // Per-mode timer state lifted here so it survives tab switches
   const [timerState, setTimerState] = useState({
     focus: { timeLeft: null, isRunning: false, customTotal: null, hasStarted: false },
     short: { timeLeft: null, isRunning: false, customTotal: null, hasStarted: false },
@@ -81,10 +88,8 @@ export default function App() {
     pomodoroCount: 0,
   })
 
-  // Merge any new default keys into saved settings (handles upgrades)
   const mergedSettings = { ...DEFAULT_SETTINGS, ...settings }
 
-  // Apply theme to <html> element whenever it changes
   useEffect(() => {
     const theme = mergedSettings.theme
     if (theme === 'midnight') {
@@ -94,15 +99,127 @@ export default function App() {
     }
   }, [mergedSettings.theme])
 
-  // Apply opacity to the window
   useEffect(() => {
     window.electronAPI?.setOpacity(mergedSettings.opacity ?? 1)
   }, [mergedSettings.opacity])
 
+  const switchMode = useCallback((newMode) => {
+    setTimerState(prev => (
+      prev.currentMode === newMode
+        ? prev
+        : { ...prev, currentMode: newMode }
+    ))
+  }, [])
+
+  const startCurrentMode = useCallback(() => {
+    setTimerState(prev => {
+      const mode = prev.currentMode
+      const cleared = { timeLeft: null, isRunning: false, customTotal: null, hasStarted: false }
+      const next = { ...prev }
+
+      for (const currentMode of Object.values(MODES)) {
+        next[currentMode] = currentMode === mode
+          ? { ...prev[currentMode], isRunning: true, hasStarted: true }
+          : cleared
+      }
+
+      return next
+    })
+  }, [])
+
+  const pauseCurrentMode = useCallback(() => {
+    setTimerState(prev => {
+      const mode = prev.currentMode
+      if (!prev[mode].isRunning) return prev
+      return {
+        ...prev,
+        [mode]: { ...prev[mode], isRunning: false },
+      }
+    })
+  }, [])
+
+  const resetCurrentMode = useCallback(() => {
+    setTimerState(prev => {
+      const mode = prev.currentMode
+      const current = prev[mode]
+      const nextTimeLeft = current.customTotal ?? getModeSettingsTotal(mergedSettings, mode)
+
+      if (current.timeLeft === nextTimeLeft && !current.isRunning && !current.hasStarted) {
+        return prev
+      }
+
+      return {
+        ...prev,
+        [mode]: {
+          ...current,
+          timeLeft: nextTimeLeft,
+          isRunning: false,
+          hasStarted: false,
+        },
+      }
+    })
+  }, [mergedSettings])
+
+  const toggleCurrentRun = useCallback(() => {
+    setTimerState(prev => {
+      const mode = prev.currentMode
+      const current = prev[mode]
+
+      if (current.isRunning) {
+        return {
+          ...prev,
+          [mode]: { ...current, isRunning: false },
+        }
+      }
+
+      const cleared = { timeLeft: null, isRunning: false, customTotal: null, hasStarted: false }
+      const next = { ...prev }
+
+      for (const currentMode of Object.values(MODES)) {
+        next[currentMode] = currentMode === mode
+          ? { ...prev[currentMode], isRunning: true, hasStarted: true }
+          : cleared
+      }
+
+      return next
+    })
+  }, [])
+
+  useEffect(() => {
+    if (!window.electronAPI?.onMenuBarCommand) return undefined
+
+    return window.electronAPI.onMenuBarCommand((command) => {
+      if (command === 'toggle-run') {
+        toggleCurrentRun()
+      }
+      if (command === 'reset') {
+        resetCurrentMode()
+      }
+    })
+  }, [resetCurrentMode, toggleCurrentRun])
+
+  useEffect(() => {
+    if (!window.electronAPI?.syncTrayState) return
+
+    const mode = timerState.currentMode
+    const current = timerState[mode]
+    const defaultTotal = getModeSettingsTotal(mergedSettings, mode)
+    const displayTimeLeft = current.timeLeft !== null ? current.timeLeft : defaultTotal
+    const activeTask = tasks.find(task => task.id === activeTaskId)
+
+    window.electronAPI.syncTrayState({
+      mode,
+      modeLabel: MODE_LABELS[mode],
+      timeText: formatTime(displayTimeLeft),
+      isRunning: current.isRunning,
+      hasStarted: current.hasStarted,
+      activeTaskName: activeTask?.name ?? null,
+    })
+  }, [activeTaskId, mergedSettings, tasks, timerState])
+
   function handleTimerComplete(mode) {
     if (mode !== 'focus') return
 
-    // Update today's stats
     const key = todayKey()
     setStats(prev => ({
       ...prev,
@@ -112,7 +229,6 @@ export default function App() {
       },
     }))
 
-    // Increment active task's pomodoro count
     if (activeTaskId) {
       setTasks(prev =>
         prev.map(t =>
@@ -138,6 +254,10 @@ export default function App() {
           onPinChange={setPinned}
           timerState={timerState}
           onTimerStateChange={setTimerState}
+          onStart={startCurrentMode}
+          onPause={pauseCurrentMode}
+          onReset={resetCurrentMode}
+          onSwitchMode={switchMode}
         />
       ) : (
         <>
@@ -154,6 +274,10 @@ export default function App() {
                 onPinChange={setPinned}
                 timerState={timerState}
                 onTimerStateChange={setTimerState}
+                onStart={startCurrentMode}
+                onPause={pauseCurrentMode}
+                onReset={resetCurrentMode}
+                onSwitchMode={switchMode}
               />
             )}
             {tab === 'tasks' && (
