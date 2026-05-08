@@ -30,10 +30,10 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: 20
           cache: npm
@@ -53,7 +53,7 @@ jobs:
         run: npx electron-builder --mac dmg --x64 --publish never
 
       - name: Upload DMG artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: ${{ matrix.artifact_name }}
           path: |
@@ -71,13 +71,13 @@ jobs:
 
     steps:
       - name: Download arm64 artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: dmg-arm64
           path: release-assets
 
       - name: Download x64 artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: dmg-x64
           path: release-assets
