@@ -42,11 +42,11 @@ jobs:
 
       - name: Build arm64 DMG
         if: matrix.arch == 'arm64'
-        run: npx electron-builder --mac dmg --arm64
+        run: npx electron-builder --mac dmg --arm64 --publish never
 
       - name: Build x64 DMG
         if: matrix.arch == 'x64'
-        run: npx electron-builder --mac dmg --x64
+        run: npx electron-builder --mac dmg --x64 --publish never
 
       - name: Upload DMG artifacts
         uses: actions/upload-artifact@v4
