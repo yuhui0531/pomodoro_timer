@@ -27,7 +27,8 @@
       "icon": "build/icon.icns"
     },
     "dmg": {
-      "title": "番茄钟"
+      "title": "番茄钟",
+      "artifactName": "pomodoro-timer-${version}-${arch}.${ext}"
     }
   },
   "devDependencies": {
