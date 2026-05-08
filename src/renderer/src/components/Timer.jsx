@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { playSound } from '../utils/sound'
 
 export const MODES = { FOCUS: 'focus', SHORT: 'short', LONG: 'long' }
 
@@ -15,22 +14,10 @@ export function formatTime(seconds) {
   return `${m}:${s}`
 }
 
-function showNotification(title, body) {
-  if (!('Notification' in window)) return
-  if (Notification.permission === 'granted') {
-    new Notification(title, { body, silent: true })
-  } else if (Notification.permission !== 'denied') {
-    Notification.requestPermission().then(p => {
-      if (p === 'granted') new Notification(title, { body, silent: true })
-    })
-  }
-}
-
 export default function Timer({
   settings,
   tasks,
   activeTaskId,
-  onComplete,
   pinned,
   onPinChange,
   timerState,
@@ -56,9 +43,6 @@ export default function Timer({
   const effectiveTotal = customTotal ?? settingsTotal
   const displayTimeLeft = timeLeft !== null ? timeLeft : settingsTotal
 
-  const timerRef = useRef({ startedAt: null, startedWith: null })
-  const intervalRef = useRef(null)
-
   const updateMode = useCallback((targetMode, updates) => {
     onTimerStateChange(prev => {
       const current = prev[targetMode]
@@ -73,62 +57,6 @@ export default function Timer({
       ? `${formatTime(displayTimeLeft)} — ${MODE_LABELS[mode]}`
       : '番茄钟'
   }, [displayTimeLeft, isRunning, mode])
-
-  const handleComplete = useCallback((completedMode, count) => {
-    if (settings.soundEnabled) playSound(completedMode === MODES.FOCUS ? 'focus' : 'break')
-    if (settings.notificationsEnabled) {
-      if (completedMode === MODES.FOCUS) {
-        showNotification('专注完成！', '休息一下吧 ☕')
-      } else {
-        showNotification('休息结束', '准备好开始下一个番茄了吗？')
-      }
-    }
-
-    onComplete(completedMode, count)
-
-    if (completedMode === MODES.FOCUS) {
-      const newCount = count + 1
-      const nextMode = newCount % settings.longBreakInterval === 0 ? MODES.LONG : MODES.SHORT
-      const auto = settings.autoStartBreaks
-      onTimerStateChange(prev => ({
-        ...prev,
-        currentMode: nextMode,
-        pomodoroCount: newCount,
-        [completedMode]: { timeLeft: null, isRunning: false, customTotal: null, hasStarted: false },
-        [nextMode]: { timeLeft: null, isRunning: auto, customTotal: null, hasStarted: auto },
-      }))
-    } else {
-      const auto = settings.autoStartFocus
-      onTimerStateChange(prev => ({
-        ...prev,
-        currentMode: MODES.FOCUS,
-        [completedMode]: { timeLeft: null, isRunning: false, customTotal: null, hasStarted: false },
-        [MODES.FOCUS]: { timeLeft: null, isRunning: auto, customTotal: null, hasStarted: auto },
-      }))
-    }
-  }, [settings, onComplete, onTimerStateChange])
-
-  useEffect(() => {
-    if (!isRunning) return
-
-    const startTime = timeLeft ?? effectiveTotal
-    timerRef.current = { startedAt: Date.now(), startedWith: startTime }
-
-    intervalRef.current = setInterval(() => {
-      const { startedAt, startedWith } = timerRef.current
-      const elapsed = Math.floor((Date.now() - startedAt) / 1000)
-      const remaining = Math.max(0, startedWith - elapsed)
-
-      if (remaining === 0) {
-        clearInterval(intervalRef.current)
-        handleComplete(mode, pomodoroCount)
-      } else {
-        updateMode(mode, { timeLeft: remaining })
-      }
-    }, 200)
-
-    return () => clearInterval(intervalRef.current)
-  }, [isRunning, mode]) // eslint-disable-line
 
   function start() {
     onStart()
